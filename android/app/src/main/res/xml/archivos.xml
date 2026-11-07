@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Lo único que la app comparte con otras: el PDF de «Mi resumen», que se arma
-     en la caché (ui/ExportarResumen.kt). -->
-<paths>
-    <cache-path name="resumen" path="resumen/" />
-</paths>

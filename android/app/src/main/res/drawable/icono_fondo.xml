@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generado por android/scripts/icono-anillos.py: la marca de Bitácora (docs/arquitectura.md,
-     «La marca: los anillos»). Si cambia la animación, se regenera. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#16180F" />
-</shape>
