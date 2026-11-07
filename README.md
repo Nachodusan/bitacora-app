@@ -41,7 +41,6 @@ sesión con tu psicólogo.
 | Servidor | Node 22, TypeScript, Fastify, `pg` sin ORM (`api/`) |
 | Base | PostgreSQL + pgvector (`db/`) |
 | Modelos | Cualquier API compatible con OpenAI. En uso: DeepSeek V4 (charla y resúmenes), bge-m3 (embeddings), Qwen3-Reranker, TTS de Inworld; todo vía DeepInfra |
-| Landing | HTML estático (`web/`) |
 
 Cómo está armado y por qué: [docs/arquitectura.md](docs/arquitectura.md).
 
