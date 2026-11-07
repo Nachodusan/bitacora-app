@@ -1,0 +1,22 @@
+.DS_Store
+*.xcuserstate
+xcuserdata/
+.build/
+DerivedData/
+node_modules/
+.env
+api/node_modules/
+api/.env
+pruebas-de-voz/
+
+# La salida de api/scripts/simular-mes.ts: un mes inventado, no va al repo.
+simulacion/
+
+# El token del servidor que va dentro de la app del iPhone. Se arma con el
+# comando de docs/arquitectura.md («El servidor en el VPS»); nunca va al repo.
+ios/Bitacora/Servidor.plist
+
+# El texto de los libros partido para la guía (api/scripts/extraer-libros.py):
+# tiene copyright, se arma en la Mac y se sube al VPS con scp.
+guias/
+api/.sim/
