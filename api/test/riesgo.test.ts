@@ -1,5 +1,6 @@
 import './_setup.ts'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { after, before, describe, test } from 'node:test'
 import type { FastifyInstance } from 'fastify'
 
@@ -29,6 +30,76 @@ after(async () => {
   await cerrarPool()
 })
 
+/// El teléfono y el servidor tienen que cortar con lo mismo y decir lo mismo.
+///
+/// Se lee el Swift como texto y se sacan las listas y el mensaje a mano. No es
+/// elegante, pero son dos lenguajes y no hay un archivo que puedan compartir;
+/// lo que importa es que una frase agregada de un solo lado no pase sin que
+/// nadie se entere.
+describe('el teléfono y el servidor cortan igual', () => {
+  const swift = readFileSync(
+    new URL('../../ios/BitacoraCore/Sources/BitacoraCore/Riesgo.swift', import.meta.url), 'utf8')
+
+  function lista(nombre: string): string[] {
+    const m = swift.match(new RegExp(`static let ${nombre} = \\[([\\s\\S]*?)\\]`))
+    assert.ok(m, `no encontré ${nombre} en Riesgo.swift`)
+    return [...m[1]!.matchAll(/"([^"]*)"/g)].map(x => x[1]!)
+  }
+
+  /// Un literal de varias líneas de Swift: se le saca la sangría, y una línea
+  /// que termina en `\` sigue en la siguiente sin salto.
+  function mensaje(): string {
+    const m = swift.match(/static let mensaje = """\n([\s\S]*?)\n\s*"""/)
+    assert.ok(m, 'no encontré el mensaje en Riesgo.swift')
+    return m[1]!.split('\n').map(l => l.replace(/^ {8}/, '')).join('\n').replace(/\\\n/g, '')
+  }
+
+  test('las mismas frases directas', () => {
+    assert.deepEqual([...SENALES_DIRECTAS].sort(), lista('senalesDirectas').sort())
+  })
+
+  test('las mismas frases de desesperanza', () => {
+    assert.deepEqual([...SENALES_DE_DESESPERANZA].sort(), lista('senalesDeDesesperanza').sort())
+  })
+
+  test('el mismo mensaje', () => {
+    assert.equal(MENSAJE_DE_RIESGO, mensaje())
+  })
+})
+
+/// Y Android (desde el 03/10/2026), con el mismo criterio: se lee el Kotlin
+/// como texto.
+describe('Android corta igual', () => {
+  const kotlin = readFileSync(
+    new URL('../../android/app/src/main/java/ar/dusan/bitacora/nucleo/Riesgo.kt', import.meta.url), 'utf8')
+
+  function lista(nombre: string): string[] {
+    const m = kotlin.match(new RegExp(`val ${nombre} = listOf\\(([\\s\\S]*?)\\)`))
+    assert.ok(m, `no encontré ${nombre} en Riesgo.kt`)
+    return [...m[1]!.matchAll(/"([^"]*)"/g)].map(x => x[1]!)
+  }
+
+  /// Los literales de la concatenación, hasta la línea que no termina en `+`.
+  function mensaje(): string {
+    const desde = kotlin.slice(kotlin.indexOf('val mensaje: String ='))
+    const lineas: string[] = []
+    for (const l of desde.split('\n').slice(1)) {
+      lineas.push(l)
+      if (!l.trimEnd().endsWith('+')) break
+    }
+    return [...lineas.join('\n').matchAll(/"((?:[^"\\]|\\.)*)"/g)]
+      .map(x => JSON.parse(`"${x[1]}"`) as string).join('')
+  }
+
+  test('las mismas frases', () => {
+    assert.deepEqual([...SENALES_DIRECTAS].sort(), lista('senalesDirectas').sort())
+    assert.deepEqual([...SENALES_DE_DESESPERANZA].sort(), lista('senalesDeDesesperanza').sort())
+  })
+
+  test('el mismo mensaje', () => {
+    assert.equal(MENSAJE_DE_RIESGO, mensaje())
+  })
+})
 
 describe('qué dispara', () => {
   /// Pedido del 02/10.

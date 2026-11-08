@@ -23,8 +23,8 @@ sesión con tu psicólogo.
   sesión (qué entendiste, qué te aportó, cómo te sentiste) y un PDF para el psicólogo.
 - **Calendario** con día lógico (corte a las 4 a. m.) y las consultas agendadas.
 - **Corte de riesgo**: si un mensaje habla de autolesión, no se llama al modelo y se
-  responde con un mensaje fijo y recursos de ayuda. El mismo corte corre también en
-  el teléfono, sin red.
+  responde con un mensaje fijo y recursos de ayuda. Está duplicado en el teléfono y en
+  el servidor.
 - **Techo de gasto**: el servidor corta antes de llamar al proveedor si se pasa del
   presupuesto del mes, en dólares y en cantidad de llamadas.
 
@@ -36,12 +36,11 @@ sesión con tu psicólogo.
 
 | Parte | Tecnología |
 |---|---|
+| iOS | SwiftUI, SwiftData, Speech, AVFoundation (`ios/`) |
+| Android | Kotlin, Jetpack Compose (`android/`) |
 | Servidor | Node 22, TypeScript, Fastify, `pg` sin ORM (`api/`) |
 | Base | PostgreSQL + pgvector (`db/`) |
 | Modelos | Cualquier API compatible con OpenAI. En uso: DeepSeek V4 (charla y resúmenes), bge-m3 (embeddings), Qwen3-Reranker, TTS de Inworld; todo vía DeepInfra |
-
-Este repositorio tiene el servidor y la base. Las apps de iOS (SwiftUI) y Android
-(Jetpack Compose) que se ven en las capturas todavía no están publicadas.
 
 Cómo está armado y por qué: [docs/arquitectura.md](docs/arquitectura.md).
 
@@ -59,6 +58,22 @@ Tests del servidor (usan una base aparte, `bitacora_test`):
 ```bash
 createdb bitacora_test && psql -d bitacora_test -f db/schema.sql
 cd api && npm test
+```
+
+**iOS:** abrir `ios/Bitacora.xcodeproj`. La dirección del servidor va en
+`BITACORA_API_URL` (`ios/Bitacora-Info.plist`) y el token en
+`ios/Bitacora/Servidor.plist`, que git ignora:
+
+```bash
+plutil -create xml1 ios/Bitacora/Servidor.plist && plutil -insert BITACORA_TOKEN -string "<tu AUTH_TOKEN>" ios/Bitacora/Servidor.plist
+```
+
+**Android:** abrir `android/` en Android Studio. La dirección y el token van en
+`android/servidor.properties` (también ignorado):
+
+```properties
+url=http://10.0.2.2:3000
+token=<tu AUTH_TOKEN>
 ```
 
 ## Licencia

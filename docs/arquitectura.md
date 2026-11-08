@@ -18,8 +18,22 @@ servidor habla con el modelo, recuerda y escribe lo que la persona se lleva a te
 
 ## Teléfono
 
-Las apps de iOS (SwiftUI) y Android (Jetpack Compose) no están en este repositorio
-todavía. Hablan con el servidor por las rutas de abajo, con un token Bearer.
+**iOS** (`ios/Bitacora`). Tres pestañas: calendario, chat y *Mi expediente*.
+
+- *Chat:* `ConversacionView` tiene tres estados (portal, conversación, llamada).
+  `Conversacion.swift` es la máquina de estados y la única que decide qué pasa con cada
+  turno. `CapturaDeVoz` dicta en el teléfono con cancelación de eco, `VozDeBitacora` y
+  `Altavoz` reproducen la voz en vivo, y `SenalDeVoz` dibuja la luz que sigue la voz.
+- *Calendario:* `CalendarioView`, con las conversaciones y notas de cada día lógico.
+- *Mi expediente:* las sesiones de terapia (`AnotarSesionView`, `SesionView`), el
+  resumen del mes (`NotasView`) y las consultas (`Agenda`, `ConsultasView`).
+- `Estilo.swift` concentra la paleta y las tipografías.
+
+**Core** (`ios/BitacoraCore`). Foundation puro y testeable: el día lógico, el cliente
+del servidor, el corte de riesgo, el fin de turno y el lector del streaming.
+
+**Android** (`android/`). Kotlin y Jetpack Compose, con la misma estructura:
+`nucleo/` (lógica pura con tests), `datos/` (almacén local y outbox), `ui/` y `voz/`.
 
 Las conversaciones terminadas pasan por un **outbox**: si no hay red, quedan en el
 teléfono y se suben cuando vuelve.
@@ -73,7 +87,9 @@ gráficos de progreso) que se sacó para volver a una base más simple.
 
 ## Tests
 
-`cd api && npm test`, contra la base `bitacora_test`.
+- Servidor: `cd api && npm test` (contra `bitacora_test`).
+- iOS: los tests de `BitacoraCore` en Xcode.
+- Android: `./gradlew test` (`NucleoTest`).
 
 `api/scripts/simular-mes.ts` genera un mes de conversaciones de una persona ficticia
 para probar resúmenes, memoria y costos sin datos reales.
