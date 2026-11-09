@@ -1,81 +1,102 @@
 # Bitácora
 
-**Un diario hablado para quien está en terapia.** Tocás la luz y hablás; Bitácora te
-contesta con voz, recuerda lo que le contaste los días anteriores y, cada noche, deja
-en el calendario un resumen del día y tus frases textuales para llevar a la próxima
-sesión con tu psicólogo.
+> [Versión en español](README.es.md)
 
-![Bitácora en el iPhone](docs/capturas/app.png)
+**A spoken journal for people in therapy.** Tap the light and talk; Bitácora
+answers out loud, remembers what you told it on previous days, and every night
+leaves a summary and your own literal phrases on the calendar — ready to take to
+your next session.
 
-> Proyecto personal. Bitácora no es terapia ni la reemplaza, y no diagnostica.
-> Todas las personas y conversaciones de las capturas son ficticias: salen de un mes
-> simulado (`api/scripts/simular-mes.ts`).
+![Bitácora on iPhone](docs/capturas/app.png)
 
-## Qué hace
+> Personal project. Bitácora is not therapy, does not replace it, and does not
+> diagnose. Every person and conversation in the screenshots is fictional, taken
+> from a simulated month (`api/scripts/simular-mes.ts`).
 
-- **Charla por voz o por escrito**, con respuestas en streaming: el texto y la voz
-  llegan mientras el modelo los genera.
-- **La voz que entra no sale del teléfono**: se transcribe en el dispositivo (Speech
-  de Apple sin red, `SpeechRecognizer` on-device en Android).
-- **Memoria larga**: los resúmenes de cada día se guardan como vectores (pgvector) y
-  en cada turno se recuperan y reordenan los que vienen al caso.
-- **Para la terapia**: resumen del día, frases textuales con su tema, registro de cada
-  sesión (qué entendiste, qué te aportó, cómo te sentiste) y un PDF para el psicólogo.
-- **Calendario** con día lógico (corte a las 4 a. m.) y las consultas agendadas.
-- **Corte de riesgo**: si un mensaje habla de autolesión, no se llama al modelo y se
-  responde con un mensaje fijo y recursos de ayuda. Está duplicado en el teléfono y en
-  el servidor.
-- **Techo de gasto**: el servidor corta antes de llamar al proveedor si se pasa del
-  presupuesto del mes, en dólares y en cantidad de llamadas.
+## What it does
+
+- **Talk or type**, with streamed responses: text and voice arrive while the model
+  is still generating.
+- **The voice never leaves the phone**: transcription happens on-device (Apple
+  `Speech` offline, Android `SpeechRecognizer` on-device).
+- **Long-term memory**: each day's summary is stored as a vector (pgvector), and
+  every turn retrieves and reranks the ones that are actually relevant.
+- **Built for the therapy session**: daily summary, literal quotes tagged by topic,
+  a record of each session (what you understood, what helped, how you felt) and a
+  PDF for the psychologist.
+- **Calendar** with a logical day (cut-off at 4 a.m.) and scheduled appointments.
+- **Risk cut-off**: if a message mentions self-harm, the model is never called —
+  the app replies with a fixed message and help resources. Implemented twice, on
+  the phone *and* on the server.
+- **Spend ceiling**: the server stops before calling the provider once the monthly
+  budget is exceeded, both in dollars and in number of calls.
 
 | | | |
 |---|---|---|
-| ![Calendario](docs/capturas/calendario.png) | ![Sesión de terapia](docs/capturas/sesion.png) | ![Resumen del día](docs/capturas/resumen.png) |
+| ![Calendar](docs/capturas/calendario.png) | ![Therapy session](docs/capturas/sesion.png) | ![Daily summary](docs/capturas/resumen.png) |
+
+## Design decisions worth reading
+
+- **The patient never sees the monthly report.** It goes to the psychologist. A
+  patient reading their own clinical record tends toward self-diagnosis, which is
+  the opposite of what the tool is for.
+- **No data point without a quote.** Every item in the report is backed by a
+  literal phrase from the patient. If there's no quote, the data point doesn't
+  exist.
+- **No diagnostic labels** anywhere in the generated language.
+- **Risk detection is duplicated** on client and server, because a single point of
+  failure on that path is not acceptable.
+
+## Testing
+
+**268 automated tests** — 151 backend, 96 iOS, 21 Android — plus a simulated month
+of real usage to validate how the AI behaves over time rather than per message.
 
 ## Stack
 
-| Parte | Tecnología |
+| Layer | Technology |
 |---|---|
 | iOS | SwiftUI, SwiftData, Speech, AVFoundation (`ios/`) |
 | Android | Kotlin, Jetpack Compose (`android/`) |
-| Servidor | Node 22, TypeScript, Fastify, `pg` sin ORM (`api/`) |
-| Base | PostgreSQL + pgvector (`db/`) |
-| Modelos | Cualquier API compatible con OpenAI. En uso: DeepSeek V4 (charla y resúmenes), bge-m3 (embeddings), Qwen3-Reranker, TTS de Inworld; todo vía DeepInfra |
+| Server | Node 22, TypeScript, Fastify, `pg` with no ORM (`api/`) |
+| Database | PostgreSQL + pgvector (`db/`) |
+| Models | Any OpenAI-compatible API. In use: DeepSeek V4 (chat and summaries), bge-m3 (embeddings), Qwen3-Reranker, Inworld TTS — all via DeepInfra |
+| Infrastructure | Ubuntu VPS, systemd, Tailscale private network, one isolated instance per client |
 
-Cómo está armado y por qué: [docs/arquitectura.md](docs/arquitectura.md).
+How it is put together and why: [docs/arquitectura.md](docs/arquitectura.md).
 
-## Correrlo
+## Running it
 
 ```bash
 brew install postgresql@17 pgvector
 createdb bitacora && psql -d bitacora -f db/schema.sql
-cd api && cp .env.example .env   # completar DATABASE_URL, AUTH_TOKEN y la clave del proveedor
+cd api && cp .env.example .env   # fill in DATABASE_URL, AUTH_TOKEN and the provider key
 npm install && npm start
 ```
 
-Tests del servidor (usan una base aparte, `bitacora_test`):
+Server tests (they use a separate database, `bitacora_test`):
 
 ```bash
 createdb bitacora_test && psql -d bitacora_test -f db/schema.sql
 cd api && npm test
 ```
 
-**iOS:** abrir `ios/Bitacora.xcodeproj`. La dirección del servidor va en
-`BITACORA_API_URL` (`ios/Bitacora-Info.plist`) y el token en
-`ios/Bitacora/Servidor.plist`, que git ignora:
+**iOS:** open `ios/Bitacora.xcodeproj`. The server address goes in
+`BITACORA_API_URL` (`ios/Bitacora-Info.plist`) and the token in
+`ios/Bitacora/Servidor.plist`, which git ignores:
 
 ```bash
-plutil -create xml1 ios/Bitacora/Servidor.plist && plutil -insert BITACORA_TOKEN -string "<tu AUTH_TOKEN>" ios/Bitacora/Servidor.plist
+plutil -create xml1 ios/Bitacora/Servidor.plist && plutil -insert BITACORA_TOKEN -string "<your AUTH_TOKEN>" ios/Bitacora/Servidor.plist
 ```
 
-**Android:** abrir `android/` en Android Studio. La dirección y el token van en
-`android/servidor.properties` (también ignorado):
+**Android:** open `android/` in Android Studio. Address and token go in
+`android/servidor.properties` (also ignored):
 
 ```properties
 url=http://10.0.2.2:3000
-token=<tu AUTH_TOKEN>
+token=<your AUTH_TOKEN>
 ```
 
-## Licencia
+## Licence
 
 [MIT](LICENSE).
